@@ -44,7 +44,17 @@ function verifyJWT($jwt, $secret) {
 }
 
 function getBearerToken() {
-    $headers = getallheaders();
+    $headers = [];
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+    } else {
+        foreach ($_SERVER as $name => $value) {
+            if (strpos($name, 'HTTP_') === 0) {
+                $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+            }
+        }
+    }
+    
     if (isset($headers['Authorization'])) {
         if (preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)) {
             return $matches[1];

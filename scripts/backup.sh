@@ -45,3 +45,6 @@ echo "{\"running\":false,\"step\":\"Termine\",\"percent\":100,\"file\":\"backup_
 
 # Envoyer le mail avec le lien de telechargement
 php /var/www/sauvegarde/scripts/send_email.php "backup_$DATE.tar.gz" >> /var/log/vps-backup-email.log 2>&1
+
+# S'assurer que les fichiers appartiennent a www-data pour l'interface web
+chown -R www-data:www-data "$BACKUP_DIR"
