@@ -3,15 +3,16 @@ import { Sheet, Typography, FormControl, FormLabel, Input, Button, Alert } from 
 import { Database } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { useAuthStore } from '../store/useAuthStore';
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage() {
   const [password, setPassword] = useState('');
+  const login = useAuthStore((state) => state.login);
 
   const loginMutation = useMutation({
     mutationFn: (pwd) => api.post('/login.php', { password: pwd }),
     onSuccess: (response) => {
-      sessionStorage.setItem('token', response.data.token);
-      onLogin();
+      login(response.data.token);
     }
   });
 

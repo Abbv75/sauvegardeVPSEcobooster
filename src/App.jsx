@@ -1,27 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import { setupAxiosInterceptors } from './api/client';
+import { useAuthStore } from './store/useAuthStore';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   
   useEffect(() => {
-    const token = sessionStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-    }
-    setupAxiosInterceptors(() => setIsAuthenticated(false));
+    setupAxiosInterceptors();
   }, []);
 
-  return isAuthenticated ? (
-    <Dashboard onLogout={() => {
-      sessionStorage.removeItem('token');
-      setIsAuthenticated(false);
-    }} />
-  ) : (
-    <LoginPage onLogin={() => setIsAuthenticated(true)} />
-  );
+  return isAuthenticated ? <Dashboard /> : <LoginPage />;
 }
 
 export default App;

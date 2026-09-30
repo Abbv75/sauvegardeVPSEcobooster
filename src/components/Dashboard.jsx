@@ -3,14 +3,16 @@ import { Box, Typography, Button, Sheet, IconButton } from '@mui/joy';
 import { LogOut, Plus } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { useAuthStore } from '../store/useAuthStore';
 import ServerInfoCard from './ServerInfoCard';
 import BackupList from './BackupList';
 import ProgressCard from './ProgressCard';
 import NewBackupDialog from './NewBackupDialog';
 
-export default function Dashboard({ onLogout }) {
+export default function Dashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const logout = useAuthStore((state) => state.logout);
 
   // Polling du statut (toutes les 2s si en cours, sinon 10s)
   const { data: statusData } = useQuery({
@@ -50,7 +52,7 @@ export default function Dashboard({ onLogout }) {
           <Typography level="h4">🗄️ SauvegardeVPS</Typography>
           <Typography level="body-sm">EcoBooster</Typography>
         </Box>
-        <IconButton onClick={onLogout} color="neutral" variant="plain">
+        <IconButton onClick={logout} color="neutral" variant="plain">
           <LogOut size={20} />
         </IconButton>
       </Sheet>
