@@ -1,7 +1,7 @@
 <?php
 require_once 'config.php';
 // Pas d'auth obligatoire pour le status car juste du polling, 
-// mais c'est mieux :
+// mais c'est mieux  :
 require_once 'auth.php';
 requireAuth();
 
