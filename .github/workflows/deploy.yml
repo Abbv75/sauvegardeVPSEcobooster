@@ -1,0 +1,96 @@
+name: Deploy sauvegardeVPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & Build React
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare server directories
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            mkdir -p /var/www/sauvegarde/public
+            mkdir -p /var/backups/vps-ecobooster
+            chmod 700 /var/backups/vps-ecobooster
+
+      - name: Upload frontend via rsync
+        uses: burnett01/rsync-deployments@7.0.0
+        with:
+          switches: -avz --delete
+          path: dist/
+          remote_path: /var/www/sauvegarde/public/
+          remote_host: ${{ secrets.VPS_HOST }}
+          remote_user: ${{ secrets.VPS_USER }}
+          remote_password: ${{ secrets.VPS_PASSWORD }}
+
+      - name: Upload API PHP
+        uses: burnett01/rsync-deployments@7.0.0
+        with:
+          switches: -avz
+          path: public/api/
+          remote_path: /var/www/sauvegarde/public/api/
+          remote_host: ${{ secrets.VPS_HOST }}
+          remote_user: ${{ secrets.VPS_USER }}
+          remote_password: ${{ secrets.VPS_PASSWORD }}
+
+      - name: Upload htaccess
+        uses: burnett01/rsync-deployments@7.0.0
+        with:
+          switches: -avz
+          path: public/.htaccess
+          remote_path: /var/www/sauvegarde/public/.htaccess
+          remote_host: ${{ secrets.VPS_HOST }}
+          remote_user: ${{ secrets.VPS_USER }}
+          remote_password: ${{ secrets.VPS_PASSWORD }}
+
+      - name: Upload scripts and setup cron
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            mkdir -p /var/www/sauvegarde/scripts
+        
+      - name: Upload backup script
+        uses: burnett01/rsync-deployments@7.0.0
+        with:
+          switches: -avz
+          path: scripts/
+          remote_path: /var/www/sauvegarde/scripts/
+          remote_host: ${{ secrets.VPS_HOST }}
+          remote_user: ${{ secrets.VPS_USER }}
+          remote_password: ${{ secrets.VPS_PASSWORD }}
+          
+      - name: Finalize setup
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            chmod +x /var/www/sauvegarde/scripts/backup.sh
+            # Installer le cron si pas encore present
+            if [ ! -f /etc/cron.d/vps-backup ]; then
+              echo "0 2 * * * root /bin/bash /var/www/sauvegarde/scripts/backup.sh >> /var/log/vps-backup-cron.log 2>&1" > /etc/cron.d/vps-backup
+              chmod 644 /etc/cron.d/vps-backup
+            fi
+            systemctl reload apache2 || true
