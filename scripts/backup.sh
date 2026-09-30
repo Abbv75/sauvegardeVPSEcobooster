@@ -42,3 +42,6 @@ ls -t "$BACKUP_DIR"/backup_*.tar.gz | tail -n +$((MAX_BACKUPS + 1)) | xargs rm -
 
 # Marquer comme termine
 echo "{\"running\":false,\"step\":\"Termine\",\"percent\":100,\"file\":\"backup_$DATE.tar.gz\"}" > "$STATUS_FILE"
+
+# Envoyer le mail avec le lien de telechargement
+php /var/www/sauvegarde/scripts/send_email.php "backup_$DATE.tar.gz" >> /var/log/vps-backup-email.log 2>&1

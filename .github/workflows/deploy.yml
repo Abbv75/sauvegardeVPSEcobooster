@@ -62,13 +62,13 @@ jobs:
           target: "/var/www/sauvegarde/public/"
           strip_components: 1
 
-      - name: Upload backup script
+      - name: Upload scripts
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
-          source: "scripts/backup.sh"
+          source: "scripts/"
           target: "/var/www/sauvegarde/scripts/"
           strip_components: 1
           
