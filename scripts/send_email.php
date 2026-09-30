@@ -15,7 +15,7 @@ $payload = [
 $token = createJWT($payload, JWT_SECRET);
 $link = "https://sauvegarde.chauffy-mali.com/api/download.php?file=" . urlencode($filename) . "&token=" . $token;
 
-$to = "ecobooster@gmail.com";
+$to = "ecoboosterlink@gmail";
 $subject = "Nouvelle sauvegarde VPS disponible !";
 $body = "Bonjour,\n\nUne nouvelle sauvegarde de votre VPS est prete.\nFichier : $filename\n\nVous pouvez la telecharger directement en cliquant sur ce lien (valide 7 jours) :\n\n$link\n\nCordialement,\nLe serveur VPS EcoBooster";
 
