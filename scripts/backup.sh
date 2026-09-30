@@ -17,7 +17,7 @@ START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 # Etape 1 -- Dump MySQL
 update_status "Sauvegarde MySQL (1/4)" 10 "$START"
 for DB in archimind chauffy delix yougoo; do
-  mysqldump -u ecoboosterlink -p'ecoboosterlink@2026' "$DB" > "$TMP_DIR/sql/$DB.sql"
+  mysqldump -u root -p'2fHjK6B3BJlzsundRJJYyGrIf7Z' --no-tablespaces "$DB" > "$TMP_DIR/sql/$DB.sql"
 done
 
 # Etape 2 -- Fichiers www (sans vendor/node_modules)
