@@ -18,16 +18,13 @@ export default function Dashboard({ onLogout }) {
     try {
       const response = await api.get('/status.php');
       setIsBackupRunning(response.data.running);
-      if (!response.data.running) {
-        fetchData();
-      }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await api.get('/list.php');
       setBackups(response.data.backups || []);
@@ -35,13 +32,14 @@ export default function Dashboard({ onLogout }) {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchStatus();
-    const interval = setInterval(fetchStatus, 5000);
+    fetchData();
+    const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -70,9 +68,9 @@ export default function Dashboard({ onLogout }) {
         </Button>
       </Box>
 
-      {isBackupRunning && <ProgressCard onFinish={fetchData} />}
+      {isBackupRunning && <ProgressCard onFinish={() => fetchData(true)} />}
 
-      <BackupList backups={backups} loading={loading} onRefresh={fetchData} />
+      <BackupList backups={backups} loading={loading} onRefresh={() => fetchData(true)} />
 
       <NewBackupDialog 
         open={isDialogOpen} 
