@@ -27,58 +27,50 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            mkdir -p /var/www/sauvegarde/public
+            mkdir -p /var/www/sauvegarde/public/api
+            mkdir -p /var/www/sauvegarde/scripts
             mkdir -p /var/backups/vps-ecobooster
             chmod 700 /var/backups/vps-ecobooster
 
-      - name: Upload frontend via rsync
-        uses: burnett01/rsync-deployments@7.0.0
-        with:
-          switches: -avz --delete
-          path: dist/
-          remote_path: /var/www/sauvegarde/public/
-          remote_host: ${{ secrets.VPS_HOST }}
-          remote_user: ${{ secrets.VPS_USER }}
-          remote_password: ${{ secrets.VPS_PASSWORD }}
-
-      - name: Upload API PHP
-        uses: burnett01/rsync-deployments@7.0.0
-        with:
-          switches: -avz
-          path: public/api/
-          remote_path: /var/www/sauvegarde/public/api/
-          remote_host: ${{ secrets.VPS_HOST }}
-          remote_user: ${{ secrets.VPS_USER }}
-          remote_password: ${{ secrets.VPS_PASSWORD }}
-
-      - name: Upload htaccess
-        uses: burnett01/rsync-deployments@7.0.0
-        with:
-          switches: -avz
-          path: public/.htaccess
-          remote_path: /var/www/sauvegarde/public/.htaccess
-          remote_host: ${{ secrets.VPS_HOST }}
-          remote_user: ${{ secrets.VPS_USER }}
-          remote_password: ${{ secrets.VPS_PASSWORD }}
-
-      - name: Upload scripts and setup cron
-        uses: appleboy/ssh-action@v1
+      - name: Upload frontend files
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
-          script: |
-            mkdir -p /var/www/sauvegarde/scripts
-        
-      - name: Upload backup script
-        uses: burnett01/rsync-deployments@7.0.0
+          source: "dist/"
+          target: "/var/www/sauvegarde/public/"
+          strip_components: 1
+
+      - name: Upload API PHP
+        uses: appleboy/scp-action@v0.1.7
         with:
-          switches: -avz
-          path: scripts/
-          remote_path: /var/www/sauvegarde/scripts/
-          remote_host: ${{ secrets.VPS_HOST }}
-          remote_user: ${{ secrets.VPS_USER }}
-          remote_password: ${{ secrets.VPS_PASSWORD }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "public/api/"
+          target: "/var/www/sauvegarde/public/api/"
+          strip_components: 2
+
+      - name: Upload htaccess
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "public/.htaccess"
+          target: "/var/www/sauvegarde/public/"
+          strip_components: 1
+
+      - name: Upload backup script
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "scripts/backup.sh"
+          target: "/var/www/sauvegarde/scripts/"
+          strip_components: 1
           
       - name: Finalize setup
         uses: appleboy/ssh-action@v1
