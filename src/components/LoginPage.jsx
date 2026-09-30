@@ -1,27 +1,23 @@
 import { useState } from 'react';
 import { Sheet, Typography, FormControl, FormLabel, Input, Button, Alert } from '@mui/joy';
 import { Database } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
 import { api } from '../api/client';
 
 export default function LoginPage({ onLogin }) {
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      const response = await api.post('/login.php', { password });
+  const loginMutation = useMutation({
+    mutationFn: (pwd) => api.post('/login.php', { password: pwd }),
+    onSuccess: (response) => {
       sessionStorage.setItem('token', response.data.token);
       onLogin();
-    } catch (err) {
-      setError('Mot de passe incorrect');
-    } finally {
-      setLoading(false);
     }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    loginMutation.mutate(password);
   };
 
   return (
@@ -48,7 +44,7 @@ export default function LoginPage({ onLogin }) {
         <Typography level="body-sm">EcoBooster</Typography>
       </div>
 
-      {error && <Alert color="danger">{error}</Alert>}
+      {loginMutation.isError && <Alert color="danger">Mot de passe incorrect</Alert>}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <FormControl>
@@ -59,11 +55,11 @@ export default function LoginPage({ onLogin }) {
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
+            disabled={loginMutation.isPending}
           />
         </FormControl>
 
-        <Button type="submit" sx={{ mt: 1 }} loading={loading}>
+        <Button type="submit" sx={{ mt: 1 }} loading={loginMutation.isPending}>
           Se connecter
         </Button>
       </form>

@@ -1,24 +1,20 @@
-import { useState } from 'react';
 import { Modal, ModalDialog, DialogTitle, DialogContent, DialogActions, Button, Checkbox, Box } from '@mui/joy';
+import { useMutation } from '@tanstack/react-query';
 import { api } from '../api/client';
 
 export default function NewBackupDialog({ open, onClose, onStart }) {
-  const [loading, setLoading] = useState(false);
-
-  const handleStart = async () => {
-    setLoading(true);
-    try {
-      await api.post('/backup.php');
+  const backupMutation = useMutation({
+    mutationFn: () => api.post('/backup.php'),
+    onSuccess: () => {
       onStart();
-    } catch (err) {
+    },
+    onError: () => {
       alert('Erreur lors du lancement');
-    } finally {
-      setLoading(false);
     }
-  };
+  });
 
   return (
-    <Modal open={open} onClose={!loading ? onClose : undefined}>
+    <Modal open={open} onClose={!backupMutation.isPending ? onClose : undefined}>
       <ModalDialog variant="outlined">
         <DialogTitle>Nouvelle Sauvegarde</DialogTitle>
         <DialogContent>
@@ -32,8 +28,12 @@ export default function NewBackupDialog({ open, onClose, onStart }) {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleStart} loading={loading}>Lancer</Button>
-          <Button variant="plain" color="neutral" onClick={onClose} disabled={loading}>Annuler</Button>
+          <Button onClick={() => backupMutation.mutate()} loading={backupMutation.isPending}>
+            Lancer
+          </Button>
+          <Button variant="plain" color="neutral" onClick={onClose} disabled={backupMutation.isPending}>
+            Annuler
+          </Button>
         </DialogActions>
       </ModalDialog>
     </Modal>

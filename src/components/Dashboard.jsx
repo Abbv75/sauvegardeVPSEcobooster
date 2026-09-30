@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, Button, Sheet, IconButton } from '@mui/joy';
 import { LogOut, Plus } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import ServerInfoCard from './ServerInfoCard';
 import BackupList from './BackupList';
@@ -8,40 +9,39 @@ import ProgressCard from './ProgressCard';
 import NewBackupDialog from './NewBackupDialog';
 
 export default function Dashboard({ onLogout }) {
-  const [backups, setBackups] = useState([]);
-  const [diskInfo, setDiskInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isBackupRunning, setIsBackupRunning] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchStatus = async () => {
-    try {
-      const response = await api.get('/status.php');
-      setIsBackupRunning(response.data.running);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // Polling du statut (toutes les 2s si en cours, sinon 10s)
+  const { data: statusData } = useQuery({
+    queryKey: ['status'],
+    queryFn: async () => {
+      const res = await api.get('/status.php');
+      return res.data;
+    },
+    refetchInterval: (query) => (query?.state?.data?.running ? 2000 : 10000),
+  });
 
-  const fetchData = async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const response = await api.get('/list.php');
-      setBackups(response.data.backups || []);
-      setDiskInfo(response.data.disk || null);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
+  const isBackupRunning = statusData?.running || false;
 
+  // Rafraichir la liste quand la sauvegarde se termine
   useEffect(() => {
-    fetchStatus();
-    fetchData();
-    const interval = setInterval(fetchStatus, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    if (statusData && !statusData.running) {
+      queryClient.invalidateQueries({ queryKey: ['list'] });
+    }
+  }, [statusData?.running, queryClient]);
+
+  // Données de la liste
+  const { data: listData, isLoading } = useQuery({
+    queryKey: ['list'],
+    queryFn: async () => {
+      const res = await api.get('/list.php');
+      return res.data;
+    },
+  });
+
+  const backups = listData?.backups || [];
+  const diskInfo = listData?.disk || null;
 
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto', p: 2 }}>
@@ -55,7 +55,7 @@ export default function Dashboard({ onLogout }) {
         </IconButton>
       </Sheet>
 
-      <ServerInfoCard backups={backups} diskInfo={diskInfo} loading={loading} />
+      <ServerInfoCard backups={backups} diskInfo={diskInfo} loading={isLoading} />
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', my: 3 }}>
         <Typography level="body-md">⚡ Sauvegarde auto : chaque nuit à 02:00</Typography>
@@ -68,16 +68,17 @@ export default function Dashboard({ onLogout }) {
         </Button>
       </Box>
 
-      {isBackupRunning && <ProgressCard onFinish={() => fetchData(true)} />}
+      {isBackupRunning && <ProgressCard status={statusData} />}
 
-      <BackupList backups={backups} loading={loading} onRefresh={() => fetchData(true)} />
+      <BackupList backups={backups} loading={isLoading} />
 
       <NewBackupDialog 
         open={isDialogOpen} 
         onClose={() => setIsDialogOpen(false)} 
         onStart={() => {
           setIsDialogOpen(false);
-          setIsBackupRunning(true);
+          // Forcer le rafraichissement immediat du statut
+          queryClient.invalidateQueries({ queryKey: ['status'] });
         }}
       />
     </Box>

@@ -1,16 +1,24 @@
 import { Table, Sheet, Typography, IconButton, Box } from '@mui/joy';
 import { Download, Trash2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 
-export default function BackupList({ backups, loading, onRefresh }) {
-  const handleDelete = async (filename) => {
+export default function BackupList({ backups, loading }) {
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (filename) => api.delete(`/delete.php?file=${filename}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['list'] });
+    },
+    onError: () => {
+      alert('Erreur lors de la suppression');
+    }
+  });
+
+  const handleDelete = (filename) => {
     if (confirm(`Supprimer la sauvegarde ${filename} ?`)) {
-      try {
-        await api.delete(`/delete.php?file=${filename}`);
-        onRefresh();
-      } catch (err) {
-        alert('Erreur lors de la suppression');
-      }
+      deleteMutation.mutate(filename);
     }
   };
 
@@ -53,7 +61,13 @@ export default function BackupList({ backups, loading, onRefresh }) {
                   <IconButton size="sm" variant="soft" color="primary" onClick={() => handleDownload(b.name)}>
                     <Download size={16} />
                   </IconButton>
-                  <IconButton size="sm" variant="soft" color="danger" onClick={() => handleDelete(b.name)}>
+                  <IconButton 
+                    size="sm" 
+                    variant="soft" 
+                    color="danger" 
+                    onClick={() => handleDelete(b.name)}
+                    disabled={deleteMutation.isPending}
+                  >
                     <Trash2 size={16} />
                   </IconButton>
                 </Box>
